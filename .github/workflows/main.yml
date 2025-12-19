@@ -33,10 +33,11 @@ jobs:
     - name: Build and Push Docker Image
       run: |
         echo "Mencari Run ID terakhir..."
-        # Mencari ID folder acak yang dibuat MLflow di dalam mlruns/0
-        LAST_RUN_ID=$(ls -t MLProject/mlruns/0/ | grep -v meta.yaml | head -n 1)
+        LAST_RUN_ID=$(ls -t MLProject/mlruns/0/ | grep -v meta.yaml | grep -v datasets | head -n 1)
         echo "Run ID ditemukan: $LAST_RUN_ID"
         
+        # Perintah build docker
+        # Pastikan path artifacts/model sesuai. Jika pakai autolog(), biasanya folder bernama 'model'
         mlflow models build-docker \
           --model-uri "MLProject/mlruns/0/$LAST_RUN_ID/artifacts/model" \
           --name "${{ secrets.DOCKER_USERNAME }}/submission-ml-model:latest"

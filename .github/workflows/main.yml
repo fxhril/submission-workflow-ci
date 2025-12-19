@@ -23,3 +23,9 @@ jobs:
       run: |
         cd MLProject
         mlflow run . --env-manager=local
+
+    - name: Archive Production Artifacts (SKILLED)
+      uses: actions/upload-artifact@v4
+      with:
+        name: hasil-training-model
+        path: MLProject/mlruns

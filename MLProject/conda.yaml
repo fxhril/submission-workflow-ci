@@ -8,5 +8,4 @@ dependencies:
       - mlflow==2.19.0
       - pandas
       - scikit-learn
-      - matplotlib
-      - seaborn
+      - dagshub

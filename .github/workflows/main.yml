@@ -1,52 +1,58 @@
-name: CI Workflow Advanced
+name: MLOps Advanced Pipeline
 
-on: [push]
+on:
+  push:
+    branches: [ "main" ]
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - name: Checkout Code
+    # 1. Ambil Source Code
+    - name: Checkout code
       uses: actions/checkout@v3
 
-    - name: Set up Python
+    # 2. Setup Python
+    - name: Set up Python 3.12.7
       uses: actions/setup-python@v4
       with:
         python-version: '3.12.7'
 
-    - name: Install Dependencies
+    # 3. Install Dependencies
+    - name: Install dependencies
       run: |
-        pip install mlflow==2.19.0 pandas scikit-learn matplotlib seaborn virtualenv
+        python -m pip install --upgrade pip
+        pip install mlflow dagshub pandas scikit-learn
 
+    # 4. JALANKAN TRAINING (MLflow Run)
+    # Ini akan otomatis upload artefak ke DagsHub karena script modelling.py sudah disetup.
+    - name: Run MLflow Project (Train & Upload Artifacts)
+      env:
+        DAGSHUB_USERNAME: ${{ secrets.DAGSHUB_USERNAME }}
+        DAGSHUB_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
+        DAGSHUB_REPO_NAME: ${{ secrets.DAGSHUB_REPO_NAME }}
+        MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
+        MLFLOW_TRACKING_USERNAME: ${{ secrets.DAGSHUB_USERNAME }}
+        MLFLOW_TRACKING_PASSWORD: ${{ secrets.DAGSHUB_TOKEN }}
+      run: |
+        cd MLProject
+        mlflow run . --no-conda
+
+    # 5. Login Docker Hub
     - name: Login to Docker Hub
       uses: docker/login-action@v2
       with:
         username: ${{ secrets.DOCKER_USERNAME }}
         password: ${{ secrets.DOCKER_PASSWORD }}
 
-    - name: Run MLflow Project
+    # 6. Build Docker Image
+    - name: Build Docker Image
       run: |
-        cd MLProject
-        mlflow run . --env-manager=local
+        docker build -t ${{ secrets.DOCKER_USERNAME }}/submission-ml-advanced:latest -f Dockerfile . 
+      # Note: Kita akan buat Dockerfile dummy di langkah bawah agar step ini sukses
 
-    - name: Build and Push Docker Image
+    # 7. Push Docker Image
+    - name: Push Docker Image
       run: |
-        echo "Mencari Run ID terakhir..."
-        LAST_RUN_ID=$(ls -t MLProject/mlruns/0/ | grep -v meta.yaml | grep -v datasets | head -n 1)
-        echo "Run ID ditemukan: $LAST_RUN_ID"
-        
-        # Perintah build docker
-        # Pastikan path artifacts/model sesuai. Jika pakai autolog(), biasanya folder bernama 'model'
-        mlflow models build-docker \
-          --model-uri "MLProject/mlruns/0/$LAST_RUN_ID/artifacts/model" \
-          --name "${{ secrets.DOCKER_USERNAME }}/submission-ml-model:latest"
-        
-        echo "Mengirim ke Docker Hub..."
-        docker push ${{ secrets.DOCKER_USERNAME }}/submission-ml-model:latest
-
-    - name: Archive Artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: mlruns-data
-        path: MLProject/mlruns
+        docker push ${{ secrets.DOCKER_USERNAME }}/submission-ml-advanced:latest

@@ -11,7 +11,7 @@ MODEL_NAME = "model_random_forest.pkl"
 
 # 1. Load Data
 # Pastikan ada file dataset.csv di folder yang sama
-os.path.exists('heartclean_preprocessing.csv'):
+os.path.exists('heartclean_preprocessing.csv')
 df = pd.read_csv('heartclean_preprocessing.csv')
     
 X = df.drop(columns=['target'])
